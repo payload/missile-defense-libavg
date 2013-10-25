@@ -105,15 +105,17 @@ class Missile(avg.LineNode):
 class Explosion(avg.CircleNode):
 
     def __init__(self,
-            r = 50,
+            r = 80,
             parent = None,
             **kwargs):
         super(Explosion, self).__init__(**kwargs)
         self.registerInstance(self, parent)
-        self.r = r
+        self.__r = r
+        self.r = 0.1 * r
         self.fillcolor = "FFFFFF"
         self.fillopacity = 1
         self.timeToLive = 0.6
+        self.__r_speed = 0.9 * r / self.timeToLive
         self.blinkTime = self.__blinkTime = 0.1
 
     def onFrame(self, dt):
@@ -124,6 +126,7 @@ class Explosion(avg.CircleNode):
             else:
                 self.opacity = self.fillopacity = 1
             self.__blinkTime = self.blinkTime
+        self.r += self.__r_speed * dt
             
         self.timeToLive -= dt
         if self.timeToLive <= 0:
