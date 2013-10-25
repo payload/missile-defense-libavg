@@ -35,6 +35,16 @@ class MyMainDiv(app.MainDiv):
             onFrame = getattr(child, "onFrame", None)
             if onFrame:
                 onFrame(dt)
+        
+        missiles = [m for m in self.children() if isinstance(m, Missile)]
+        explosions = [e for e in self.children() if isinstance(e, Explosion)]
+        for missile in missiles:
+            for explosion in explosions:
+                diff = explosion.pos - missile.pos2
+                if diff.getNorm() < explosion.r:
+                    missile.explode()
+                    break
+            
         if random.random() < 0.02:
             self.newMissile()
 
@@ -82,10 +92,13 @@ class Missile(avg.LineNode):
         progress = self.progress = self.progress + dt / self.timeToLive
         self.pos2 = self.pos1 + self.__diff * progress
         if progress >= 1:
-            Explosion(
-                parent = self.parent,
-                pos = self.pos2)
-            self.unlink(True)
+            self.explode()
+            
+    def explode(self):
+        Explosion(
+            parent = self.parent,
+            pos = self.pos2)
+        self.unlink(True)
 
 
 
@@ -115,8 +128,8 @@ class Explosion(avg.CircleNode):
         self.timeToLive -= dt
         if self.timeToLive <= 0:
             self.unlink(True)
-            
-            
+
+
 
 def main():
     app.App().run(MyMainDiv())
