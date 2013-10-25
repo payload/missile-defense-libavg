@@ -31,8 +31,8 @@ class MyMainDiv(app.MainDiv):
 
     def onFrame(self):
         dt = avg.player.getFrameDuration() / 1000
-        for line in self.children():
-            onFrame = getattr(line, "onFrame", None)
+        for child in self.children():
+            onFrame = getattr(child, "onFrame", None)
             if onFrame:
                 onFrame(dt)
         if random.random() < 0.02:
