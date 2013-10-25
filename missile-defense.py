@@ -60,6 +60,7 @@ class MyMainDiv(app.MainDiv):
         self.newMissile(x_start, y_start, ev.x, ev.y)
 
 
+
 class Missile(avg.LineNode):
 
     def __init__(self,
@@ -81,9 +82,41 @@ class Missile(avg.LineNode):
         progress = self.progress = self.progress + dt / self.timeToLive
         self.pos2 = self.pos1 + self.__diff * progress
         if progress >= 1:
+            Explosion(
+                parent = self.parent,
+                pos = self.pos2)
             self.unlink(True)
 
 
+
+class Explosion(avg.CircleNode):
+
+    def __init__(self,
+            r = 50,
+            parent = None,
+            **kwargs):
+        super(Explosion, self).__init__(**kwargs)
+        self.registerInstance(self, parent)
+        self.r = r
+        self.fillcolor = "FFFFFF"
+        self.fillopacity = 1
+        self.timeToLive = 0.6
+        self.blinkTime = self.__blinkTime = 0.1
+
+    def onFrame(self, dt):
+        self.__blinkTime -= dt
+        if self.__blinkTime <= 0:
+            if self.opacity == 1:
+                self.opacity = self.fillopacity = 0
+            else:
+                self.opacity = self.fillopacity = 1
+            self.__blinkTime = self.blinkTime
+            
+        self.timeToLive -= dt
+        if self.timeToLive <= 0:
+            self.unlink(True)
+            
+            
 
 def main():
     app.App().run(MyMainDiv())
