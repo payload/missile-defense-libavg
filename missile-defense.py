@@ -15,6 +15,47 @@ class Drug(object):
 
 
 
+def P(*args):
+    for x in args:
+        print x,
+    print ""
+    return args[-1:][0]
+
+
+
+def sequentialAnim(anims, repeat = False, wait = 0):
+    anims = list(anims)
+    assert len(anims) > 0
+    from itertools import chain, izip
+    if wait > 0:
+        waits = (avg.WaitAnim(wait) for _ in range(len(anims)))
+        anims = list(chain(*izip(anims, waits)))
+    for animA, animB in izip(anims, anims[1:]):
+        _sequentialAnim(animA, animB)
+    if repeat:
+        _sequentialAnim(anims[-1:][0], anims[0])
+    return anims[0]
+
+def _sequentialAnim(animA, animB):
+    animA.setStopCallback(lambda: animB.start())
+
+
+
+def linearAnim(
+        node, attrNames, duration, startValue, endValue, useInt=False,
+        startCallback=None, stopCallback=None):
+    if isinstance(attrNames, str):
+        attrNames = map(str.strip, attrNames.split(","))
+    assert len(attrNames) > 0
+    anims = [
+        avg.LinearAnim(node, attrName, duration, startValue, endValue, useInt)
+        for attrName in attrNames]
+    panim = avg.ParallelAnim(anims, startCallback, stopCallback, 10)
+    anims[0].setStopCallback(lambda: panim.abort())
+    return panim
+
+
+
 Color = Drug(
     ship = "666666"
 )
@@ -31,6 +72,7 @@ class MyMainDiv(app.MainDiv):
 
     def onFrame(self):
         dt = avg.player.getFrameDuration() / 1000
+        
         for child in self.children():
             onFrame = getattr(child, "onFrame", None)
             if onFrame:
@@ -110,27 +152,15 @@ class Explosion(avg.CircleNode):
             **kwargs):
         super(Explosion, self).__init__(**kwargs)
         self.registerInstance(self, parent)
-        self.__r = r
-        self.r = 0.1 * r
+        self.__anim = avg.ParallelAnim([
+            avg.LinearAnim(self, "r", 600, 0.1*r, r),
+            sequentialAnim([
+                linearAnim(self, "fillopacity, opacity", 0, 1, 1),
+                linearAnim(self, "fillopacity, opacity", 0, 0, 0)],
+                repeat = True, wait = 100)
+            ], None, lambda: self.unlink(True))
+        self.__anim.start()
         self.fillcolor = "FFFFFF"
-        self.fillopacity = 1
-        self.timeToLive = 0.6
-        self.__r_speed = 0.9 * r / self.timeToLive
-        self.blinkTime = self.__blinkTime = 0.1
-
-    def onFrame(self, dt):
-        self.__blinkTime -= dt
-        if self.__blinkTime <= 0:
-            if self.opacity == 1:
-                self.opacity = self.fillopacity = 0
-            else:
-                self.opacity = self.fillopacity = 1
-            self.__blinkTime = self.blinkTime
-        self.r += self.__r_speed * dt
-            
-        self.timeToLive -= dt
-        if self.timeToLive <= 0:
-            self.unlink(True)
 
 
 
