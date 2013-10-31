@@ -93,7 +93,7 @@ class MyMainDiv(app.MainDiv):
     def children(self):
         return [self.getChild(i) for i in range(self.getNumChildren())]
 
-    def newMissile(self, x1 = None, y1 = 0, x2 = None, y2 = 480):
+    def newMissile(self, x1 = None, y1 = 0, x2 = None, y2 = 480, speed = 100):
         if x1 == None:
             x1 = random.randint(0, 640)
         if x2 == None:
@@ -101,7 +101,8 @@ class MyMainDiv(app.MainDiv):
         return Missile(
             parent = self,
             pos1 = (x1, y1),
-            pos2 = (x2, y2))
+            pos2 = (x2, y2),
+            speed = speed)
             
     def onCursorUp(self, ev):
         step = float(640 / 5)
@@ -109,7 +110,7 @@ class MyMainDiv(app.MainDiv):
         i = min(4, max(i, 1))
         x_start = i * step
         y_start = 480
-        self.newMissile(x_start, y_start, ev.x, ev.y)
+        self.newMissile(x_start, y_start, ev.x, ev.y, speed = 200)
 
 
 
