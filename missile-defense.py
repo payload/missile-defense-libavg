@@ -122,20 +122,16 @@ class Missile(avg.LineNode):
             **kwargs):
         super(Missile, self).__init__(**kwargs)
         self.registerInstance(self, parent)
-        self.__pos2 = avg.Point2D(pos2)
-        self.pos2 = self.pos1
+        pos2 = avg.Point2D(pos2)
+        diff = pos2 - self.pos1
+        vel = diff.getNormalized() * speed
+        eta = diff.getNorm() / speed
+        eta = int(eta * 1000)
+        anim = avg.ParallelAnim([
+            avg.ContinuousAnim(self, "pos2", self.pos1, vel),
+            avg.WaitAnim(eta, stopCallback = self.explode)])
+        anim.start()
         
-        speed = float(speed)
-        diff = self.__diff = self.__pos2 - self.pos1
-        self.timeToLive = diff.getNorm() / speed
-        self.progress = 0
-        
-    def onFrame(self, dt):
-        progress = self.progress = self.progress + dt / self.timeToLive
-        self.pos2 = self.pos1 + self.__diff * progress
-        if progress >= 1:
-            self.explode()
-            
     def explode(self):
         Explosion(
             parent = self.parent,
@@ -152,15 +148,15 @@ class Explosion(avg.CircleNode):
             **kwargs):
         super(Explosion, self).__init__(**kwargs)
         self.registerInstance(self, parent)
-        self.__anim = avg.ParallelAnim([
+        self.fillcolor = "FFFFFF"
+        anim = avg.ParallelAnim([
             avg.LinearAnim(self, "r", 600, 0.1*r, r),
             sequentialAnim([
                 linearAnim(self, "fillopacity, opacity", 0, 1, 1),
                 linearAnim(self, "fillopacity, opacity", 0, 0, 0)],
                 repeat = True, wait = 100)
             ], None, lambda: self.unlink(True))
-        self.__anim.start()
-        self.fillcolor = "FFFFFF"
+        anim.start()
 
 
 
