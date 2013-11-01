@@ -3,7 +3,7 @@
 
 import random
 
-import libavg as avg
+import libavg as avg, math
 from libavg import app
 
 
@@ -19,7 +19,7 @@ def P(*args):
     for x in args:
         print x,
     print ""
-    return args[-1:][0]
+    return args[-1]
 
 
 
@@ -33,7 +33,7 @@ def sequentialAnim(anims, repeat = False, wait = 0):
     for animA, animB in izip(anims, anims[1:]):
         _sequentialAnim(animA, animB)
     if repeat:
-        _sequentialAnim(anims[-1:][0], anims[0])
+        _sequentialAnim(anims[-1], anims[0])
     return anims[0]
 
 def _sequentialAnim(animA, animB):
@@ -82,7 +82,7 @@ class MyMainDiv(app.MainDiv):
         explosions = [e for e in self.children() if isinstance(e, Explosion)]
         for missile in missiles:
             for explosion in explosions:
-                diff = explosion.pos - missile.pos2
+                diff = explosion.pos - missile.pos[-1]
                 if diff.getNorm() < explosion.r:
                     missile.explode()
                     break
@@ -114,9 +114,10 @@ class MyMainDiv(app.MainDiv):
 
 
 
-class Missile(avg.LineNode):
+class Missile(avg.PolyLineNode):
 
     def __init__(self,
+            pos1 = (0,0),
             pos2 = (0,0),
             speed = 100,
             parent = None,
@@ -124,19 +125,34 @@ class Missile(avg.LineNode):
         super(Missile, self).__init__(**kwargs)
         self.registerInstance(self, parent)
         pos2 = avg.Point2D(pos2)
-        diff = pos2 - self.pos1
-        vel = diff.getNormalized() * speed
+        diff = pos2 - pos1
+        self.__vel = diff.getNormalized() * speed
+        
+        vel_ortho = self.__vel.getRotated(math.pi/2)
+        vel_ortho = vel_ortho / vel_ortho.getNorm()
+        self.__vel_ortho = vel_ortho
+        
         eta = diff.getNorm() / speed
         eta = int(eta * 1000)
-        anim = avg.ParallelAnim([
-            avg.ContinuousAnim(self, "pos2", self.pos1, vel),
-            avg.WaitAnim(eta, stopCallback = self.explode)])
+        anim = avg.WaitAnim(eta, stopCallback = self.explode)
         anim.start()
+        
+        self.pos = [pos1]
+        
+    def onFrame(self, dt):
+        time    = avg.player.getFrameTime() / 1000.0
+        vel     = self.__vel
+        amp     = random.normalvariate(50, 10)
+        freq    = random.normalvariate(20, 5)
+        tumble  = self.__vel_ortho * amp * math.sin(time * freq)
+        pos     = self.pos[-1]
+        pos    += vel * dt + tumble * dt
+        self.pos = self.pos + [pos]
         
     def explode(self):
         Explosion(
             parent = self.parent,
-            pos = self.pos2)
+            pos = self.pos[-1])
         self.unlink(True)
 
 
